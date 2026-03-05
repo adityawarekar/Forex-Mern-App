@@ -4,6 +4,7 @@ require("dotenv").config();
 
 
 const connectDB = require("./config/db");
+const authMiddleware = require("./middleware/authMiddleware");
 
 const app = express();
 
@@ -18,6 +19,13 @@ app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
   res.send("Forex MERN Backend Running 🚀");
+});
+
+app.get("/api/protected", authMiddleware, (req, res) => {
+  res.json({
+    message: "Protected route accessed",
+    user: req.user
+  });
 });
 
 const startServer = async () => {
