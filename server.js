@@ -5,7 +5,7 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 const authMiddleware = require("./middleware/authMiddleware");
-
+const channelRoutes = require("./routes/channelRoutes");
 const app = express();
 
 console.log("Starting server...");
@@ -16,6 +16,7 @@ app.use(express.json());
 const authRoutes = require("./routes/authRoutes");
 
 app.use("/api/auth", authRoutes);
+app.use("/api/channels", channelRoutes);
 
 app.get("/", (req, res) => {
   res.send("Forex MERN Backend Running 🚀");
