@@ -1,42 +1,53 @@
+const axios = require("axios");
 const ForexUpdate = require("../models/ForexUpdate");
 const { getIO } = require("../socket/socket");
 
 function startForexStream() {
 
   const pairs = [
-    "EUR/USD",
-    "GBP/USD",
-    "USD/JPY",
-    "USD/CHF"
+    { base: "EUR", quote: "USD" },
+    { base: "GBP", quote: "USD" },
+    { base: "USD", quote: "JPY" },
+    { base: "USD", quote: "CHF" }
   ];
 
   setInterval(async () => {
 
     try {
 
-      const pair = pairs[Math.floor(Math.random() * pairs.length)];
+      for (const pair of pairs) {
 
-      const bid = (1 + Math.random()).toFixed(5);
-      const ask = (parseFloat(bid) + 0.0003).toFixed(5);
+        const url = `https://open.er-api.com/v6/latest/${pair.base}`;
 
-      const update = new ForexUpdate({
-        pair,
-        bid,
-        ask
-      });
+        const response = await axios.get(url);
 
-      await update.save();
+        const rate = response.data.rates[pair.quote];
 
-      const io = getIO();
-      io.emit("forexUpdate", update);
+        const bid = Number(rate.toFixed(5));
+        const ask = Number((rate + 0.0003).toFixed(5));
 
-      console.log("Forex Update:", pair, bid, ask);
+        const update = new ForexUpdate({
+          pair: `${pair.base}/${pair.quote}`,
+          bid,
+          ask
+        });
+
+        await update.save();
+
+        const io = getIO();
+        io.emit("forexUpdate", update);
+
+        console.log(`Forex Update: ${pair.base}/${pair.quote}`, bid, ask);
+
+      }
 
     } catch (error) {
-      console.error("Forex Stream Error:", error);
+
+      console.error("Forex API Error:", error.message);
+
     }
 
-  }, 5000);
+  }, 10000);
 
 }
 
