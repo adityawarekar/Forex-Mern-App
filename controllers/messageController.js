@@ -1,4 +1,5 @@
 const Message = require("../models/Message");
+const { getIO } = require("../socket/socket");
 
 const sendMessage = async (req, res) => {
   try {
@@ -13,9 +14,15 @@ const sendMessage = async (req, res) => {
 
     await newMessage.save();
 
+    const populatedMessage = await newMessage.populate("user", "name email");
+
+    // SOCKET BROADCAST
+    const io = getIO();
+    io.to(channelId).emit("newMessage", populatedMessage);
+
     res.status(201).json({
       message: "Message sent",
-      data: newMessage
+      data: populatedMessage
     });
 
   } catch (error) {
@@ -24,4 +31,23 @@ const sendMessage = async (req, res) => {
   }
 };
 
-module.exports = { sendMessage };
+const getChannelMessages = async (req, res) => {
+  try {
+
+    const { channelId } = req.params;
+
+    const messages = await Message.find({ channelId })
+      .populate("user", "name email")
+      .sort({ createdAt: 1 });
+
+    res.json({
+      messages
+    });
+
+  } catch (error) {
+    console.error("Fetch Messages Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = { sendMessage, getChannelMessages };
